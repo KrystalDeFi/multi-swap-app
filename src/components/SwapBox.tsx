@@ -1,8 +1,7 @@
 import { DestTokensByChain, NetworkByName } from '../utils/constants';
-import { Token, TokenBalance } from '../types';
+import { TokenBalance } from '../types';
 import React, { useState, useEffect } from 'react';
-import { formatTokenBalance, formatTokenBalanceFromWei, formatUSDValue, getBalanceFromWei, getFullTokenBalanceFromHex, shortAddress } from '../utils/utils';
-import { BigNumber } from 'bignumber.js';
+import { getFullTokenBalanceFromHex } from '../utils/utils';
 import { Widget } from "@kyberswap/widgets";
 import { ethers } from 'ethers';
 
@@ -20,8 +19,9 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token }) => {
         console.log('Switching to chain:', chainId);
         let provider = new ethers.providers.Web3Provider(window.ethereum);
         try {
+            await new Promise(resolve => setTimeout(resolve, 100));
             await provider.send('wallet_switchEthereumChain', [{ chainId: ethers.utils.hexValue(parseInt(chainId, 10)) }]);
-            await new Promise(resolve => setTimeout(resolve, 500));
+            await new Promise(resolve => setTimeout(resolve, 100));
             
             let c = (await provider.getNetwork()).chainId;
             console.log('Switched to chain:', c);
@@ -42,15 +42,44 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token }) => {
 
     const renderSwap = (token: TokenBalance) => {
         let p = new ethers.providers.Web3Provider(window.ethereum);
+        let dest = localStorage.getItem(`selectedDestToken_${token?.chain}`);
+        let tokenList = DestTokensByChain[token.chain].map((t) => {
+            return {
+                address: t.address,
+                chainId: NetworkByName[token.chain].chain_id,
+                logoURI: t.logo_url ?? '',
+                name: t.name,
+                symbol: t.symbol,
+                decimals: t.decimals,
+            };
+        });
+        
+        tokenList.push({
+            ...token,
+            address: token.id,
+            logoURI: token.logo_url ?? '',
+            chainId: NetworkByName[token.chain].chain_id,
+        });
+        // name: string;
+        // symbol: string;
+        // address: string;
+        // decimals: number;
+        // logoURI: string;
+        // chainId: number;
+        // isImport?: boolean;
+
         return (
             <Widget
                 key={token.id}
                 client="krystal"
-                tokenList={[]}
+                tokenList={tokenList}
                 provider={p}
                 defaultTokenIn={token.id}
                 defaultAmountIn={getFullTokenBalanceFromHex(token.raw_amount_hex_str)}
-                // defaultTokenOut={defaultTokenOut[chainId]}
+                defaultTokenOut={dest ?? DestTokensByChain[token.chain][0].address}
+                onDestinationTokenChange={(dest: any) => {
+                    localStorage.setItem(`selectedDestToken_${token?.chain}`, dest.address);
+                }}
             />
         );
     }
