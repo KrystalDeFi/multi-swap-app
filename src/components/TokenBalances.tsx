@@ -24,6 +24,12 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     const [sortOrder, setSortOrder] = useState<string>('desc');
     const [selectedToken, setSelectedToken] = useState<TokenBalance | null>(null);
 
+    const [searchTerm, setSearchTerm] = useState<string>('');
+
+    const handleSearchChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        setSearchTerm(event.target.value);
+    };
+
     const handleApiKeyChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         const key = event.target.value;
         setApiKey(key);
@@ -97,7 +103,8 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     const filteredTokens = tokens.filter(token => 
         (!filterChain || token.chain === filterChain) && 
         (showUnverified || token.is_core) &&
-        (!filterSmallValues || (token.price * token.amount) >= threshold)
+        (!filterSmallValues || (token.price * token.amount) >= threshold) &&
+        token.name.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const sortedTokens = [...filteredTokens].sort((a, b) => {
@@ -168,6 +175,14 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                             onChange={(e) => setThreshold(Number(e.target.value))}
                         />
                     </label>
+
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={handleSearchChange}
+                        placeholder="Search by token name"
+                        style={{marginLeft: "20px"}}
+                    />
                 </div>
 
                 {/* {filterChain && (
