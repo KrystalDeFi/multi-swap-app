@@ -11,7 +11,8 @@ interface TokenListProps {
 }
 
 const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
-    const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('debankApiKey') || '');
+    // Have a default key for testing
+    const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('debankApiKey') || 'd216e5d73a29372b33b78d3ce2d3077c4e708ba7');
     const [tokens, setTokens] = useState<TokenBalance[]>([]);
     // const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
