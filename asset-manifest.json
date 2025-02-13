@@ -1,0 +1,10 @@
+{
+  "files": {
+    "main.js": "/liquidation-app/static/js/main.7a8aae02.js",
+    "index.html": "/liquidation-app/index.html",
+    "main.7a8aae02.js.map": "/liquidation-app/static/js/main.7a8aae02.js.map"
+  },
+  "entrypoints": [
+    "static/js/main.7a8aae02.js"
+  ]
+}
