@@ -1,10 +1,10 @@
 {
   "files": {
-    "main.js": "/multi-swap-app/static/js/main.b51a656d.js",
+    "main.js": "/multi-swap-app/static/js/main.fddbb82a.js",
     "index.html": "/multi-swap-app/index.html",
-    "main.b51a656d.js.map": "/multi-swap-app/static/js/main.b51a656d.js.map"
+    "main.fddbb82a.js.map": "/multi-swap-app/static/js/main.fddbb82a.js.map"
   },
   "entrypoints": [
-    "static/js/main.b51a656d.js"
+    "static/js/main.fddbb82a.js"
   ]
 }
