@@ -94,7 +94,7 @@ export const NetworkList = [
         chain_id: 10,
         chain_name: 'op',
         display_name: 'Optimism',
-        logo: 'https://pbs.twimg.com/card_img/1877986410797613056/f_PamgzZ?format=png&name=small',
+        logo: 'https://cryptologos.cc/logos/optimism-ethereum-op-logo.png',
         explorer_url: 'https://optimistic.etherscan.io'
     },
     {
@@ -263,5 +263,17 @@ export const DestTokensByChain: { [chain_name: string]: Token[] } = {
     base: [
         { chain: 'base', address: '0x4200000000000000000000000000000000000006', name: 'Wrapped ETH', symbol: 'WETH', logo_url: 'https://cryptologos.cc/logos/ethereum-eth-logo.png', decimals: 18 },
         { chain: 'base', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', name: 'USD Coin', symbol: 'USDC', logo_url: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', decimals: 6 },
+    ],
+    arb: [
+        { chain: 'arb', address: '0x82af49447d8a07e3bd95bd0d56f35241523fbab1', name: 'Wrapped ETH', symbol: 'WETH', logo_url: 'https://cryptologos.cc/logos/ethereum-eth-logo.png', decimals: 18 },
+        { chain: 'arb', address: '0xff970a61a04b1ca14834a43f5de4533ebddb5cc8', name: 'USD Coin', symbol: 'USDC', logo_url: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', decimals: 6 },
+        { chain: 'arb', address: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9', name: 'Tether', symbol: 'USDT', logo_url: 'https://cryptologos.cc/logos/tether-usdt-logo.png', decimals: 6 },
+        { chain: 'arb', address: '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', name: 'Dai', symbol: 'DAI', logo_url: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png', decimals: 18 },
+    ],
+    op: [
+        { chain: 'op', address: '0x4200000000000000000000000000000000000006', name: 'Wrapped ETH', symbol: 'WETH', logo_url: 'https://cryptologos.cc/logos/ethereum-eth-logo.png', decimals: 18 },
+        { chain: 'op', address: '0x7f5c764cbc14f9669b88837ca1490cca17c31607', name: 'USD Coin', symbol: 'USDC', logo_url: 'https://cryptologos.cc/logos/usd-coin-usdc-logo.png', decimals: 6 },
+        { chain: 'op', address: '0x4200000000000000000000000000000000000042', name: 'Tether', symbol: 'USDT', logo_url: 'https://cryptologos.cc/logos/tether-usdt-logo.png', decimals: 6 },
+        { chain: 'op', address: '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', name: 'Dai', symbol: 'DAI', logo_url: 'https://cryptologos.cc/logos/multi-collateral-dai-dai-logo.png', decimals: 18 },
     ],
 };

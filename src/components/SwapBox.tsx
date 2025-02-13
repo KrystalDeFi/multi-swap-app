@@ -43,7 +43,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token }) => {
     const renderSwap = (token: TokenBalance) => {
         let p = new ethers.providers.Web3Provider(window.ethereum);
         let dest = localStorage.getItem(`selectedDestToken_${token?.chain}`);
-        let tokenList = DestTokensByChain[token.chain].map((t) => {
+        let tokenList = (DestTokensByChain[token.chain] ?? []).map((t) => {
             return {
                 address: t.address,
                 chainId: NetworkByName[token.chain].chain_id,
