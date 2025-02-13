@@ -257,8 +257,18 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                     <td>{token.amount > 0 ? (
                                         <a href="#" onClick={() => {
                                             setSelectedToken(token);
-                                        }}>[liquidiate]</a>
+                                        }}>[liquidate]</a>
                                      ) : ''}</td>
+
+                                    <td>
+                                        <a 
+                                            href={`https://defi.krystal.app/swap?chainId=${NetworkByName[token.chain].chain_id}&srcAddress=${token.id}`} 
+                                            target="_blank" 
+                                            rel="noopener noreferrer"
+                                        >
+                                            <img src="https://icoholder.com/files/img/a65404b5005a820f6227500feadf6a76.jpeg" alt="Krystal" width="20" height="20" />
+                                        </a>
+                                    </td>
                                 </tr>
                             );
                         }) : <tr><td colSpan={8}>{sortedTokens === null ? 'Loading...' : 'No Data'}</td></tr>}
