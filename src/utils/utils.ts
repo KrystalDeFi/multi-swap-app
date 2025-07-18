@@ -45,3 +45,98 @@ export const getFullTokenBalanceFromHex = (hexBalance: string): string => {
     const balance = ethers.BigNumber.from(hexBalance);
     return formatUnits(balance);
 };
+
+// ERC20 ABI for balanceOf function
+const ERC20_ABI = [
+    {
+        "constant": true,
+        "inputs": [{"name": "_owner", "type": "address"}],
+        "name": "balanceOf",
+        "outputs": [{"name": "balance", "type": "uint256"}],
+        "type": "function"
+    },
+    {
+        "constant": true,
+        "inputs": [],
+        "name": "decimals",
+        "outputs": [{"name": "", "type": "uint8"}],
+        "type": "function"
+    }
+];
+
+export const getWorkingRpcEndpoint = async (chainId: number): Promise<string> => {
+    const { defaultRpcEndpointsByNetwork, NetworkByChainId } = await import('./constants');
+    const endpoints = defaultRpcEndpointsByNetwork[chainId] || [];
+    const network = NetworkByChainId[chainId];
+    
+    if (endpoints.length === 0) {
+        const networkName = network ? network.display_name : `chain ${chainId}`;
+        throw new Error(`No RPC endpoints found for ${networkName} (chain ID: ${chainId})`);
+    }
+    
+    console.log(`Testing ${endpoints.length} RPC endpoints for ${network?.display_name || `chain ${chainId}`}`);
+    
+    for (const endpoint of endpoints) {
+        try {
+            console.log(`Testing RPC endpoint: ${endpoint}`);
+            
+            const provider = new ethers.providers.JsonRpcProvider(endpoint, {
+                name: `chain-${chainId}`,
+                chainId: chainId
+            });
+            
+            // Test the connection by getting the latest block number
+            await withTimeout(provider.getBlockNumber(), 5000); // 5 second timeout
+            
+            console.log(`RPC endpoint working: ${endpoint}`);
+            return endpoint;
+        } catch (error) {
+            console.error(`RPC endpoint failed: ${endpoint}`, error);
+            continue;
+        }
+    }
+    
+    const networkName = network ? network.display_name : `chain ${chainId}`;
+    throw new Error(`All RPC endpoints failed for ${networkName} (chain ID: ${chainId})`);
+};
+
+export const fetchTokenBalanceFromNode = async (
+    tokenAddress: string, 
+    walletAddress: string, 
+    chainId: number,
+    rpcUrl?: string
+): Promise<{ balance: string; decimals: number }> => {
+    try {
+        // Get a working RPC endpoint
+        const endpoint = rpcUrl || await getWorkingRpcEndpoint(chainId);
+        
+        console.log(`Using RPC endpoint: ${endpoint}`);
+        
+        // Create provider with explicit network configuration
+        const provider = new ethers.providers.JsonRpcProvider(endpoint, {
+            name: `chain-${chainId}`,
+            chainId: chainId
+        });
+        
+        // Create contract instance
+        const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);
+        
+        // Fetch balance and decimals with timeout
+        const [balance, decimals] = await Promise.all([
+            withTimeout(contract.balanceOf(walletAddress), 10000) as Promise<ethers.BigNumber>, // 10 second timeout
+            withTimeout(contract.decimals(), 10000) as Promise<number>
+        ]);
+        
+        console.log(`Successfully fetched balance from ${endpoint}`);
+        
+        return {
+            balance: formatUnits(balance, decimals),
+            decimals
+        };
+    } catch (error: any) {
+        console.error('Error fetching token balance from node:', error);
+        throw error;
+    }
+};
+
+

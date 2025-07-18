@@ -28,36 +28,52 @@ import daiLogo from '../assets/logos/multi-collateral-dai-dai-logo.png';
 
 export const defaultRpcEndpointsByNetwork: { [chain_id: number]: string[] } = {
     1: [
-        'https://mainnet.infura.io/v3/YOUR_INFURA_PROJECT_ID',
         'https://rpc.ankr.com/eth',
         'https://cloudflare-eth.com',
+        'https://eth.llamarpc.com',
+        'https://ethereum.publicnode.com',
         'https://main-rpc.linkpool.io',
         'https://rpc.flashbots.net',
+        'https://eth-mainnet.public.blastapi.io',
     ],
     137: [
         'https://polygon-rpc.com',
         'https://rpc-mainnet.maticvigil.com',
         'https://rpc-mainnet.matic.network',
+        'https://polygon.llamarpc.com',
+        'https://polygon-rpc.publicnode.com',
     ],
     56: [
         'https://bsc-dataseed.binance.org',
         'https://bsc-dataseed1.defibit.io',
         'https://bsc-dataseed1.ninicoin.io',
+        'https://bsc.llamarpc.com',
+        'https://bsc.publicnode.com',
     ],
     42161: [
         'https://arb1.arbitrum.io/rpc',
+        'https://arbitrum.llamarpc.com',
+        'https://arbitrum.publicnode.com',
     ],
     10: [
         'https://mainnet.optimism.io',
+        'https://optimism.llamarpc.com',
+        'https://optimism.publicnode.com',
     ],
     43114: [
         'https://api.avax.network/ext/bc/C/rpc',
+        'https://avalanche.llamarpc.com',
+        'https://avalanche.publicnode.com',
     ],
     250: [
         'https://rpcapi.fantom.network',
+        'https://fantom.llamarpc.com',
+        'https://fantom.publicnode.com',
     ],
     100: [
         'https://rpc.gnosischain.com',
+        'https://gnosis.llamarpc.com',
+        'https://gnosis.publicnode.com',
     ],
     42170: [
         'https://nova.arbitrum.io/rpc',
@@ -70,10 +86,46 @@ export const defaultRpcEndpointsByNetwork: { [chain_id: number]: string[] } = {
     ],
     42220: [
         'https://forno.celo.org',
+        'https://celo.llamarpc.com',
     ],
     1001: [
         'https://rpc.sonic.game',
         'https://rpc-mainnet.sonic.game',
+    ],
+    8453: [
+        'https://mainnet.base.org',
+        'https://base.llamarpc.com',
+        'https://base.publicnode.com',
+        'https://1rpc.io/base',
+    ],
+    128: [
+        'https://http-mainnet.hecochain.com',
+        'https://http-mainnet-node.huobichain.com',
+    ],
+    66: [
+        'https://exchainrpc.okex.org',
+    ],
+    25: [
+        'https://evm.cronos.org',
+        'https://cronos.llamarpc.com',
+    ],
+    1313161554: [
+        'https://mainnet.aurora.dev',
+    ],
+    42262: [
+        'https://emerald.oasis.dev',
+    ],
+    40: [
+        'https://mainnet.telos.net/evm',
+    ],
+    288: [
+        'https://mainnet.boba.network',
+    ],
+    1287: [
+        'https://rpc.api.moonbase.moonbeam.network',
+    ],
+    1666600000: [
+        'https://api.harmony.one',
     ],
 };
 
@@ -257,6 +309,11 @@ export const NetworkByName = NetworkList.reduce((acc, network) => {
     acc[network.chain_name] = network;
     return acc;
 }, {} as { [key: string]: typeof NetworkList[0] });
+
+export const NetworkByChainId = NetworkList.reduce((acc, network) => {
+    acc[network.chain_id] = network;
+    return acc;
+}, {} as { [key: number]: typeof NetworkList[0] });
 
 export const tokenListSources = [
     { name: 'Uniswap', url: 'https://tokens.uniswap.org' },
