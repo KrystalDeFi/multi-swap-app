@@ -1,19 +1,20 @@
 {
   "files": {
-    "main.js": "/multi-swap-app/static/js/main.efa54aa0.js",
+    "main.js": "/multi-swap-app/static/js/main.701ff4f5.js",
     "static/media/xdai-stake-logo.png": "/multi-swap-app/static/media/xdai-stake-logo.8c266642507fbdfcf5d4.png",
     "static/media/oasis-network-rose-logo.png": "/multi-swap-app/static/media/oasis-network-rose-logo.9708e050ba1f54510d71.png",
     "static/media/klaytn-klay-logo.png": "/multi-swap-app/static/media/klaytn-klay-logo.ebbb10d6a1f6270da9c8.png",
     "static/media/multi-collateral-dai-dai-logo.png": "/multi-swap-app/static/media/multi-collateral-dai-dai-logo.c1ab4b17d36e1a0696e8.png",
     "static/media/cronos-cro-logo.png": "/multi-swap-app/static/media/cronos-cro-logo.72dc2c5c115edc409c06.png",
+    "static/media/avalanche-avax-logo.png": "/multi-swap-app/static/media/avalanche-avax-logo.ebde103aa2cbb4fd7327.png",
     "static/media/binance-coin-bnb-logo.png": "/multi-swap-app/static/media/binance-coin-bnb-logo.6658ab803fbacc393f85.png",
     "static/media/base-chain-logo.png": "/multi-swap-app/static/media/base-chain-logo.37bb344ccd83617b8204.png",
     "static/media/optimism-ethereum-op-logo.png": "/multi-swap-app/static/media/optimism-ethereum-op-logo.6b445a35b6cbd64c27ee.png",
     "static/media/sonic-logo.png": "/multi-swap-app/static/media/sonic-logo.6bd23454d489ba34d34e.png",
     "index.html": "/multi-swap-app/index.html",
-    "main.efa54aa0.js.map": "/multi-swap-app/static/js/main.efa54aa0.js.map"
+    "main.701ff4f5.js.map": "/multi-swap-app/static/js/main.701ff4f5.js.map"
   },
   "entrypoints": [
-    "static/js/main.efa54aa0.js"
+    "static/js/main.701ff4f5.js"
   ]
 }
