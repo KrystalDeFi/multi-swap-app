@@ -102,6 +102,11 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token, onBalanceUpdate
                         chainId: chainId
                     });
                     
+                    // Disable ENS resolution for non-Ethereum networks
+                    if (chainId !== 1) {
+                        (provider as any).ensAddress = null;
+                    }
+                    
                     const receipt = await withTimeout(provider.getTransactionReceipt(txHash), 10000);
                     
                     if (receipt && receipt.confirmations > 0) {

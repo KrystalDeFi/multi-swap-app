@@ -37,6 +37,7 @@ export const defaultRpcEndpointsByNetwork: { [chain_id: number]: string[] } = {
         'https://eth-mainnet.public.blastapi.io',
     ],
     137: [
+        'https://rpc-amoy.polygon.technology/',
         'https://polygon-rpc.com',
         'https://rpc-mainnet.maticvigil.com',
         'https://rpc-mainnet.matic.network',

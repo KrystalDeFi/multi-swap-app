@@ -85,6 +85,11 @@ export const getWorkingRpcEndpoint = async (chainId: number): Promise<string> =>
                 chainId: chainId
             });
             
+            // Disable ENS resolution for non-Ethereum networks
+            if (chainId !== 1) {
+                (provider as any).ensAddress = null;
+            }
+            
             // Test the connection by getting the latest block number
             await withTimeout(provider.getBlockNumber(), 5000); // 5 second timeout
             
@@ -117,6 +122,11 @@ export const fetchTokenBalanceFromNode = async (
             name: `chain-${chainId}`,
             chainId: chainId
         });
+        
+        // Disable ENS resolution for non-Ethereum networks
+        if (chainId !== 1) {
+            (provider as any).ensAddress = null;
+        }
         
         // Create contract instance
         const contract = new ethers.Contract(tokenAddress, ERC20_ABI, provider);

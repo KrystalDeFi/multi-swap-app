@@ -333,7 +333,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                 }));
             }
             
-            addToast(`Balance for ${token.symbol} updated successfully!`, 'success');
+            addToast(`Balance for ${token.symbol} updated successfully`, 'success');
 
         } catch (error: any) {
             console.error('Error refreshing token balance:', error);
@@ -650,7 +650,6 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                     }));
                                 }
                             }
-                            addToast(`Balance for ${selectedToken.symbol} updated successfully!`, 'success');
                         }}
                     />
                 ) : 'Pls select token to liquidate'}
