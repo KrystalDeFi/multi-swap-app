@@ -1885,14 +1885,13 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@kyberswap/widgets@^1.3.12":
-  version "1.3.12"
-  resolved "https://registry.yarnpkg.com/@kyberswap/widgets/-/widgets-1.3.12.tgz#be532d509f4156b42d4a40a300c52f3e4deb36f0"
-  integrity sha512-bTNeSqZPcDHMvilMIJ/RLeRENLg1AC2tg7l0MPjfukyNNhA2Mp+nT+3UkcZyvlZ+/ggKCgoBXfbUsloW5zP48w==
+"@kyberswap/widgets@2.3.0":
+  version "2.3.0"
+  resolved "https://registry.yarnpkg.com/@kyberswap/widgets/-/widgets-2.3.0.tgz#87a9aa264bc0fe0ca484326c211709dd293ecad6"
+  integrity sha512-fEIjgkNnF5zMfxHYK4EEswYpQfjQfxdxYBDSX+nEvce1T3MYTXjbe8ZZpkGRusVsEgUb2/m6+k3V06+El3xp9Q==
   dependencies:
     "@popperjs/core" "^2.11.8"
     eslint-plugin-better-styled-components "^1.1.2"
-    ethers "^5.7.0"
     lodash.throttle "^4.1.1"
     react-indiana-drag-scroll "^2.2.0"
     react-popper "^2.3.0"
@@ -4814,7 +4813,7 @@ etag@~1.8.1:
   resolved "https://registry.yarnpkg.com/etag/-/etag-1.8.1.tgz#41ae2eeb65efa62268aebfea83ac7d79299b0887"
   integrity sha512-aIL5Fx7mawVa300al2BnEE4iNvo1qETxLrPI/o05L7z6go7fCw1J6EQmbK4FmJ2AS7kgVF/KEZWufBfdClMcPg==
 
-ethers@^5.7.0, ethers@^5.7.2:
+ethers@^5.7.2:
   version "5.7.2"
   resolved "https://registry.yarnpkg.com/ethers/-/ethers-5.7.2.tgz#3a7deeabbb8c030d4126b24f84e525466145872e"
   integrity sha512-wswUsmWo1aOK8rR7DIKiWSw9DbLWe6x98Jrn8wcTflTVvaXhAMaB5zGAXy0GYQEQp9iO1iSHWVyARQm11zUtyg==

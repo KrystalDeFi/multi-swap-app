@@ -2,7 +2,7 @@ import { DestTokensByChain, NetworkByName } from '../utils/constants';
 import { TokenBalance } from '../types';
 import React, { useState, useEffect } from 'react';
 import { getFullTokenBalanceFromHex, fetchTokenBalanceFromNode, getWorkingRpcEndpoint, withTimeout } from '../utils/utils';
-import { Widget } from "@kyberswap/widgets";
+import { Widget, TxData } from "@kyberswap/widgets";
 import { ethers } from 'ethers';
 
 
@@ -19,6 +19,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token, onBalanceUpdate
     const [isProviderReady, setIsProviderReady] = useState<boolean>(false);
     const [isMonitoringTx, setIsMonitoringTx] = useState<boolean>(false);
     const [currentTxHash, setCurrentTxHash] = useState<string>('');
+    const [rpcUrl, setRpcUrl] = useState<string>('');
 
     const switchNetwork = async (chainId: string) => {
         console.log('Switching to chain:', chainId);
@@ -27,7 +28,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token, onBalanceUpdate
             await new Promise(resolve => setTimeout(resolve, 100));
             await provider.send('wallet_switchEthereumChain', [{ chainId: ethers.utils.hexValue(parseInt(chainId, 10)) }]);
             await new Promise(resolve => setTimeout(resolve, 100));
-            
+
             let c = (await provider.getNetwork()).chainId;
             console.log('Switched to chain:', c);
 
@@ -41,49 +42,63 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token, onBalanceUpdate
     useEffect(() => {
         if (token) {
             setIsProviderReady(false);
-            switchNetwork(NetworkByName[token.chain].chain_id.toString());
+            setRpcUrl('');
+            const chainId = NetworkByName[token.chain].chain_id;
+            switchNetwork(chainId.toString());
+            getWorkingRpcEndpoint(chainId).then((url) => {
+                console.log('Resolved RPC for widget:', url);
+                setRpcUrl(url);
+            }).catch((err) => {
+                console.error('Failed to resolve RPC endpoint:', err);
+            });
         }
     }, [token]);
 
     const renderSwap = (token: TokenBalance) => {
-        let p = new ethers.providers.Web3Provider(window.ethereum);
+        const chainId = NetworkByName[token.chain].chain_id;
         let dest = localStorage.getItem(`selectedDestToken_${token?.chain}`);
         let tokenList = (DestTokensByChain[token.chain] ?? []).map((t) => {
             return {
                 address: t.address,
-                chainId: NetworkByName[token.chain].chain_id,
+                chainId: chainId,
                 logoURI: t.logo_url ?? '',
                 name: t.name,
                 symbol: t.symbol,
                 decimals: t.decimals,
             };
         });
-        
+
         tokenList.push({
             ...token,
             address: token.id,
             logoURI: token.logo_url ?? '',
-            chainId: NetworkByName[token.chain].chain_id,
+            chainId: chainId,
         });
-        // name: string;
-        // symbol: string;
-        // address: string;
-        // decimals: number;
-        // logoURI: string;
-        // chainId: number;
-        // isImport?: boolean;
 
-        const handleTxSubmit = (txHash: string, data: any) => {
-            console.log('Transaction submitted:', txHash, data);
+        const handleSubmitTx = async (txData: TxData): Promise<string> => {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = provider.getSigner();
+            const tx = await signer.sendTransaction({
+                from: txData.from,
+                to: txData.to,
+                value: txData.value,
+                data: txData.data,
+                gasLimit: txData.gasLimit,
+            });
+
+            const txHash = tx.hash;
+            console.log('Transaction submitted:', txHash);
             setCurrentTxHash(txHash);
             setIsMonitoringTx(true);
-            
+
             if (onToast) {
                 onToast(`Transaction submitted: ${txHash.slice(0, 10)}...`, 'info');
             }
-            
+
             // Start monitoring the transaction
             monitorTransaction(txHash, token.chain);
+
+            return txHash;
         };
 
         const monitorTransaction = async (txHash: string, chainName: string) => {
@@ -214,14 +229,16 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token, onBalanceUpdate
                     key={token.id}
                     client="krystal"
                     tokenList={tokenList}
-                    provider={p}
+                    chainId={chainId}
+                    rpcUrl={rpcUrl}
+                    connectedAccount={{ address: walletAddress, chainId: chainId }}
+                    onSubmitTx={handleSubmitTx}
                     defaultTokenIn={token.id}
                     defaultAmountIn={getFullTokenBalanceFromHex(token.raw_amount_hex_str)}
                     defaultTokenOut={dest ?? DestTokensByChain[token.chain][0].address}
                     onDestinationTokenChange={(dest: any) => {
                         localStorage.setItem(`selectedDestToken_${token?.chain}`, dest.address);
                     }}
-                    onTxSubmit={handleTxSubmit}
                 />
                 {isMonitoringTx && (
                     <div style={{ 
@@ -265,7 +282,7 @@ const SwapBox: React.FC<SwapBoxProps> = ({ walletAddress, token, onBalanceUpdate
                     {NetworkByName[token.chain].display_name}
                 </span>
             ) : 'N.A'}</p>
-            {isProviderReady && token.id && renderSwap(token)}
+            {isProviderReady && rpcUrl && token.id && renderSwap(token)}
         </div>
     );
 };

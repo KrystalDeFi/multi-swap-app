@@ -22,6 +22,8 @@ import baseLogo from '../assets/logos/base-chain-logo.png';
 import blastLogo from '../assets/logos/blast-blast-logo.png';
 import klaytnLogo from '../assets/logos/klaytn-klay-logo.png';
 import sonicLogo from '../assets/logos/sonic-logo.png';
+import roninLogo from '../assets/logos/ronin-ron-logo.png';
+import unichainLogo from '../assets/logos/unichain-uni-logo.png';
 import usdcLogo from '../assets/logos/usd-coin-usdc-logo.png';
 import usdtLogo from '../assets/logos/tether-usdt-logo.png';
 import daiLogo from '../assets/logos/multi-collateral-dai-dai-logo.png';
@@ -37,10 +39,8 @@ export const defaultRpcEndpointsByNetwork: { [chain_id: number]: string[] } = {
         'https://eth-mainnet.public.blastapi.io',
     ],
     137: [
-        'https://rpc-amoy.polygon.technology/',
+        'https://polygon-bor-rpc.publicnode.com',
         'https://polygon-rpc.com',
-        'https://rpc-mainnet.maticvigil.com',
-        'https://rpc-mainnet.matic.network',
         'https://polygon.llamarpc.com',
         'https://polygon-rpc.publicnode.com',
     ],
@@ -127,6 +127,16 @@ export const defaultRpcEndpointsByNetwork: { [chain_id: number]: string[] } = {
     ],
     1666600000: [
         'https://api.harmony.one',
+    ],
+    2020: [
+        'https://api.roninchain.com/rpc',
+        'https://api-gateway.skymavis.com/rpc',
+    ],
+    130: [
+        'https://mainnet.unichain.org',
+    ],
+    999: [
+        'https://rpc.hyperliquid.xyz/evm',
     ],
 };
 
@@ -298,6 +308,27 @@ export const NetworkList = [
         display_name: 'Sonic',
         logo: sonicLogo,
         explorer_url: 'https://explorer.sonic.game'
+    },
+    {
+        chain_id: 2020,
+        chain_name: 'ron',
+        display_name: 'Ronin',
+        logo: roninLogo,
+        explorer_url: 'https://app.roninchain.com'
+    },
+    {
+        chain_id: 130,
+        chain_name: 'uni',
+        display_name: 'Unichain',
+        logo: unichainLogo,
+        explorer_url: 'https://uniscan.xyz'
+    },
+    {
+        chain_id: 999,
+        chain_name: 'hyper',
+        display_name: 'HyperEVM',
+        logo: ethereumLogo,
+        explorer_url: 'https://purrsec.com'
     }
 ];
 
@@ -376,5 +407,16 @@ export const DestTokensByChain: { [chain_name: string]: Token[] } = {
         { chain: 'sonic', address: '0x833589fcd6edb6e08f4c7c32d4f71b54bda02913', name: 'USD Coin', symbol: 'USDC', logo_url: usdcLogo, decimals: 6 },
         { chain: 'sonic', address: '0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9', name: 'Tether', symbol: 'USDT', logo_url: usdtLogo, decimals: 6 },
         { chain: 'sonic', address: '0xda10009cbd5d07dd0cecc66161fc93d7c9000da1', name: 'Dai', symbol: 'DAI', logo_url: daiLogo, decimals: 18 },
+    ],
+    ron: [
+        { chain: 'ron', address: '0xe514d9DEB7966c8BE0ca922de8a064264eA6bcd4', name: 'Wrapped RON', symbol: 'WRON', logo_url: roninLogo, decimals: 18 },
+        { chain: 'ron', address: '0x0B7007c13325C48911F73A2daD5FA5dCBf808aDc', name: 'USD Coin', symbol: 'USDC', logo_url: usdcLogo, decimals: 6 },
+    ],
+    uni: [
+        { chain: 'uni', address: '0x4200000000000000000000000000000000000006', name: 'Wrapped ETH', symbol: 'WETH', logo_url: ethereumLogo, decimals: 18 },
+        { chain: 'uni', address: '0x078D782b760474a361dDA0AF3839290b0EF57AD6', name: 'USD Coin', symbol: 'USDC', logo_url: usdcLogo, decimals: 6 },
+    ],
+    hyper: [
+        { chain: 'hyper', address: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb', name: 'Wrapped HYPE', symbol: 'WHYPE', logo_url: ethereumLogo, decimals: 18 },
     ],
 };
