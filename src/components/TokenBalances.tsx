@@ -146,6 +146,19 @@ const ToastComponent: React.FC<ToastComponentProps> = ({ toast, index, onRemove 
     );
 };
 
+const CACHE_DUST_THRESHOLD_USD = 0.1;
+
+const cacheWalletTokens = (address: string, tokens: TokenBalance[], lastUpdated: Date): boolean => {
+    const trimmed = tokens.filter(t => (t.price || 0) * (t.amount || 0) >= CACHE_DUST_THRESHOLD_USD);
+    try {
+        localStorage.setItem(address.toLowerCase(), JSON.stringify({ tokens: trimmed, lastUpdated }));
+        return true;
+    } catch (e) {
+        console.warn(`Failed to cache tokens for ${address} (${trimmed.length} tokens):`, e);
+        return false;
+    }
+};
+
 const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     // Have a default key for testing
     const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('debankApiKey') || 'd216e5d73a29372b33b78d3ce2d3077c4e708ba7');
@@ -211,11 +224,14 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                     'AccessKey': `${apiKey}`
                 }
             });
+            const now = new Date();
             setTokens(response.data);
             setError(null);
-            setLastUpdated(new Date());
-            localStorage.setItem(walletAddress.toLowerCase(), JSON.stringify({ tokens: response.data, lastUpdated: new Date() }));
+            setLastUpdated(now);
             addToast(`Successfully fetched ${response.data.length} tokens!`, 'success');
+            if (!cacheWalletTokens(walletAddress, response.data, now)) {
+                addToast('Token list too large to cache locally; refresh will re-fetch.', 'info');
+            }
         } catch (err: any) {
             const errorMessage = err.response?.data?.message || err.message;
             setError(`Failed to fetch token data. Err: ${errorMessage}`);
@@ -316,8 +332,8 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
             // Update localStorage
             const storedData = localStorage.getItem(walletAddress.toLowerCase());
             if (storedData) {
-                const { tokens: storedTokens, lastUpdated } = JSON.parse(storedData);
-                const updatedTokens = storedTokens.map((t: TokenBalance) => 
+                const { tokens: storedTokens } = JSON.parse(storedData);
+                const updatedTokens = storedTokens.map((t: TokenBalance) =>
                     t.id === token.id && t.chain === token.chain
                         ? {
                             ...t,
@@ -327,10 +343,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                         }
                         : t
                 );
-                localStorage.setItem(walletAddress.toLowerCase(), JSON.stringify({ 
-                    tokens: updatedTokens, 
-                    lastUpdated: new Date() 
-                }));
+                cacheWalletTokens(walletAddress, updatedTokens, new Date());
             }
             
             addToast(`Balance for ${token.symbol} updated successfully`, 'success');
@@ -633,8 +646,8 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                             if (walletAddress) {
                                 const storedData = localStorage.getItem(walletAddress.toLowerCase());
                                 if (storedData) {
-                                    const { tokens: storedTokens, lastUpdated } = JSON.parse(storedData);
-                                    const updatedTokens = storedTokens.map((t: TokenBalance) => 
+                                    const { tokens: storedTokens } = JSON.parse(storedData);
+                                    const updatedTokens = storedTokens.map((t: TokenBalance) =>
                                         t.id === selectedToken.id && t.chain === selectedToken.chain
                                             ? {
                                                 ...t,
@@ -644,10 +657,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                             }
                                             : t
                                     );
-                                    localStorage.setItem(walletAddress.toLowerCase(), JSON.stringify({ 
-                                        tokens: updatedTokens, 
-                                        lastUpdated: new Date() 
-                                    }));
+                                    cacheWalletTokens(walletAddress, updatedTokens, new Date());
                                 }
                             }
                         }}
