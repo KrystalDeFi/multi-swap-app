@@ -138,6 +138,9 @@ export const defaultRpcEndpointsByNetwork: { [chain_id: number]: string[] } = {
     999: [
         'https://rpc.hyperliquid.xyz/evm',
     ],
+    4663: [
+        'https://rpc.mainnet.chain.robinhood.com',
+    ],
 };
 
 export const NetworkList = [
@@ -329,6 +332,13 @@ export const NetworkList = [
         display_name: 'HyperEVM',
         logo: ethereumLogo,
         explorer_url: 'https://purrsec.com'
+    },
+    {
+        chain_id: 4663,
+        chain_name: 'hood',
+        display_name: 'Robinhood',
+        logo: ethereumLogo,
+        explorer_url: 'https://robinhoodchain.blockscout.com'
     }
 ];
 
@@ -418,5 +428,9 @@ export const DestTokensByChain: { [chain_name: string]: Token[] } = {
     ],
     hyper: [
         { chain: 'hyper', address: '0xB8CE59FC3717ada4C02eaDF9682A9e934F625ebb', name: 'Wrapped HYPE', symbol: 'WHYPE', logo_url: ethereumLogo, decimals: 18 },
+    ],
+    hood: [
+        { chain: 'hood', address: '0x0Bd7D308f8E1639FAb988df18A8011f41EAcAD73', name: 'Wrapped ETH', symbol: 'WETH', logo_url: ethereumLogo, decimals: 18 },
+        { chain: 'hood', address: '0x5fc5360D0400a0Fd4f2af552ADD042D716F1d168', name: 'Global Dollar', symbol: 'USDG', logo_url: usdcLogo, decimals: 6 },
     ],
 };
