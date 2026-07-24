@@ -1885,10 +1885,10 @@
     "@jridgewell/resolve-uri" "^3.1.0"
     "@jridgewell/sourcemap-codec" "^1.4.14"
 
-"@kyberswap/widgets@2.3.0":
-  version "2.3.0"
-  resolved "https://registry.yarnpkg.com/@kyberswap/widgets/-/widgets-2.3.0.tgz#87a9aa264bc0fe0ca484326c211709dd293ecad6"
-  integrity sha512-fEIjgkNnF5zMfxHYK4EEswYpQfjQfxdxYBDSX+nEvce1T3MYTXjbe8ZZpkGRusVsEgUb2/m6+k3V06+El3xp9Q==
+"@kyberswap/widgets@2.4.1":
+  version "2.4.1"
+  resolved "https://registry.yarnpkg.com/@kyberswap/widgets/-/widgets-2.4.1.tgz#bff99a0005b255599f310f6bd6062d9c02d07142"
+  integrity sha512-gS5tmqOaUP7iSUT5A5nY4dHzL66eQFU4ragkWyWTbwTg+4zg49eeBGbK/DgrC1wn+VTKUqOmVAzpVKZky6tGRA==
   dependencies:
     "@popperjs/core" "^2.11.8"
     eslint-plugin-better-styled-components "^1.1.2"

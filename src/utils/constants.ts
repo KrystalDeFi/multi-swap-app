@@ -24,6 +24,7 @@ import klaytnLogo from '../assets/logos/klaytn-klay-logo.png';
 import sonicLogo from '../assets/logos/sonic-logo.png';
 import roninLogo from '../assets/logos/ronin-ron-logo.png';
 import unichainLogo from '../assets/logos/unichain-uni-logo.png';
+import robinhoodLogo from '../assets/logos/robinhood-hood-logo.png';
 import usdcLogo from '../assets/logos/usd-coin-usdc-logo.png';
 import usdtLogo from '../assets/logos/tether-usdt-logo.png';
 import daiLogo from '../assets/logos/multi-collateral-dai-dai-logo.png';
@@ -337,7 +338,7 @@ export const NetworkList = [
         chain_id: 4663,
         chain_name: 'hood',
         display_name: 'Robinhood',
-        logo: ethereumLogo,
+        logo: robinhoodLogo,
         explorer_url: 'https://robinhoodchain.blockscout.com'
     }
 ];
