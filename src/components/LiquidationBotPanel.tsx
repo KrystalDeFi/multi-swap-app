@@ -18,6 +18,22 @@ const ERC20_TRANSFER_ABI = [
     'function transfer(address,uint256) returns (bool)',
 ];
 
+// Rebasing, reflection and fee-on-transfer tokens derive balanceOf from a global rate
+// that moves whenever anyone else trades the token. Sending the exact figure we read
+// then reverts with "transfer amount exceeds balance" once the tx lands a block or two
+// later, so shave a hair off the amount to absorb that drift. 0.01% is far more headroom
+// than observed drift needs and is worth a fraction of a cent on any realistic balance.
+const DEFAULT_SEND_MARGIN_PERCENT = 0.01;
+
+const applySendMargin = (balance: ethers.BigNumber, marginPercent: number): ethers.BigNumber => {
+    if (!(marginPercent > 0)) return balance;
+    // 1% == 10,000 ppm; keep the maths in integers so BigNumber stays exact.
+    const ppm = Math.round(Math.min(marginPercent, 5) * 10000);
+    const margin = balance.mul(ppm).div(1_000_000);
+    // On dust balances the margin rounds to zero — send the whole thing.
+    return margin.isZero() ? balance : balance.sub(margin);
+};
+
 export const getTokenKey = (token: TokenBalance): string => `${token.chain}-${token.id}`;
 
 const STATUS_STYLES: { [key in SendStatus]: { label: string; color: string } } = {
@@ -49,6 +65,7 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
     const [running, setRunning] = useState(false);
     const [results, setResults] = useState<{ [tokenKey: string]: SendResult }>({});
     const [currentKey, setCurrentKey] = useState<string | null>(null);
+    const [marginPercent, setMarginPercent] = useState<number>(DEFAULT_SEND_MARGIN_PERCENT);
     const stopRef = useRef(false);
 
     // Group by chain so the wallet only has to switch networks once per chain.
@@ -154,7 +171,12 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
                 setResult(tokenKey, { status: 'skipped', message: 'No on-chain balance' });
                 return { chainId, sent: false };
             }
-            tx = await erc20.transfer(LIQUIDATION_BOT_ADDRESS, balance);
+            const amount = applySendMargin(balance, marginPercent);
+            if (amount.lte(0)) {
+                setResult(tokenKey, { status: 'skipped', message: 'No on-chain balance' });
+                return { chainId, sent: false };
+            }
+            tx = await erc20.transfer(LIQUIDATION_BOT_ADDRESS, amount);
         }
 
         setResult(tokenKey, { status: 'submitted', txHash: tx.hash });
@@ -361,7 +383,28 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
             </div>
 
             <div style={{ fontSize: '11px', color: '#777', marginTop: '8px' }}>
-                One wallet prompt per token. Rejecting a prompt skips that token and moves on.
+                <label>
+                    Safety margin:{' '}
+                    <input
+                        type="number"
+                        value={marginPercent}
+                        min={0}
+                        max={5}
+                        step={0.01}
+                        disabled={running}
+                        onChange={(e) => setMarginPercent(Math.max(0, Math.min(5, Number(e.target.value) || 0)))}
+                        style={{ width: '60px' }}
+                    />{' '}
+                    %
+                </label>
+                <div style={{ marginTop: '4px' }}>
+                    Sends {(100 - marginPercent).toFixed(2)}% of each ERC20 balance. The margin absorbs the
+                    balance drift on rebasing and fee-on-transfer tokens that otherwise reverts the transfer
+                    as "amount exceeds balance". Set 0 to send the exact balance.
+                </div>
+                <div style={{ marginTop: '4px' }}>
+                    One wallet prompt per token. Rejecting a prompt skips that token and moves on.
+                </div>
             </div>
         </div>
     );
