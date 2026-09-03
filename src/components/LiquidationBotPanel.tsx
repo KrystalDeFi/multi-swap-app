@@ -91,21 +91,40 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
     const [marginPercent, setMarginPercent] = useState<number>(DEFAULT_SEND_MARGIN_PERCENT);
     const stopRef = useRef(false);
 
+    // Sort value captured the first time a token enters the queue. Sending refreshes the
+    // balance to zero, and ranking off the live value would make a row jump to the bottom
+    // of its chain group the instant it confirms — which reads as the row disappearing.
+    const sortValuesRef = useRef<Map<string, number>>(new Map());
+
     // Group by chain so the wallet only has to switch networks once per chain.
     const orderedTokens = useMemo(() => {
+        const sortValues = sortValuesRef.current;
+        selectedTokens.forEach(token => {
+            const key = getTokenKey(token);
+            if (!sortValues.has(key)) {
+                sortValues.set(key, token.price * token.amount);
+            }
+        });
+
         return [...selectedTokens].sort((a, b) => {
             if (a.chain !== b.chain) return a.chain.localeCompare(b.chain);
-            return b.price * b.amount - a.price * a.amount;
+            return (sortValues.get(getTokenKey(b)) ?? 0) - (sortValues.get(getTokenKey(a)) ?? 0);
         });
     }, [selectedTokens]);
 
-    const totalValue = orderedTokens.reduce((acc, token) => acc + token.price * token.amount, 0);
+    const queuedValue = (token: TokenBalance): number =>
+        sortValuesRef.current.get(getTokenKey(token)) ?? token.price * token.amount;
+
+    const totalValue = orderedTokens.reduce((acc, token) => acc + queuedValue(token), 0);
 
     // Drop results for tokens that left the queue, so re-adding one later starts clean
     // instead of showing the outcome of a previous run.
     useEffect(() => {
         if (running) return;
         const selectedKeys = new Set(selectedTokens.map(getTokenKey));
+        sortValuesRef.current.forEach((_, key) => {
+            if (!selectedKeys.has(key)) sortValuesRef.current.delete(key);
+        });
         setResults(prev => {
             const next: { [tokenKey: string]: SendResult } = {};
             let changed = false;
@@ -161,6 +180,8 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
         setResult(tokenKey, { status: 'awaiting-signature' });
 
         let tx: ethers.providers.TransactionResponse;
+        let sentAmount: string;
+        const decimals = token.decimals ?? 18;
 
         if (isNative) {
             const balance = await provider.getBalance(from);
@@ -187,6 +208,7 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
                 setResult(tokenKey, { status: 'skipped', message: 'Balance too low to cover gas' });
                 return { chainId, sent: false };
             }
+            sentAmount = ethers.utils.formatUnits(value, decimals);
             tx = await signer.sendTransaction({
                 to: LIQUIDATION_BOT_ADDRESS,
                 value,
@@ -223,12 +245,13 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
                 `(short by ${balance.sub(amount).toString()})`
             );
 
+            sentAmount = ethers.utils.formatUnits(amount, decimals);
             tx = await erc20.transfer(LIQUIDATION_BOT_ADDRESS, amount);
         }
 
-        setResult(tokenKey, { status: 'submitted', txHash: tx.hash });
+        setResult(tokenKey, { status: 'submitted', txHash: tx.hash, sentAmount });
         await tx.wait();
-        setResult(tokenKey, { status: 'confirmed', txHash: tx.hash });
+        setResult(tokenKey, { status: 'confirmed', txHash: tx.hash, sentAmount });
         onTokenSent(token);
         return { chainId, sent: true };
     };
@@ -388,10 +411,13 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
                                     <strong style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                                         {token.symbol}
                                     </strong>
-                                    <span style={{ flexShrink: 0 }}>{formatUSDValue(token.price * token.amount)}</span>
+                                    <span style={{ flexShrink: 0 }}>{formatUSDValue(queuedValue(token))}</span>
                                 </div>
                                 <div style={{ color: '#999', fontSize: '11px' }}>
-                                    {formatTokenBalance(token.amount)} · {shortAddress(token.id)}
+                                    {result?.sentAmount
+                                        ? `${formatTokenBalance(Number(result.sentAmount))} sent`
+                                        : formatTokenBalance(token.amount)}{' '}
+                                    · {shortAddress(token.id)}
                                 </div>
                                 <div style={{ color: style.color, fontSize: '12px' }}>
                                     {result ? style.label : 'Not started'}

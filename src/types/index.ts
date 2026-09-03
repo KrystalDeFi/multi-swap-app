@@ -57,4 +57,7 @@ export interface SendResult {
     status: SendStatus;
     txHash?: string;
     message?: string;
+    /** Formatted amount actually transferred, kept so a confirmed row can show it
+     *  after the live balance has been refreshed down to zero. */
+    sentAmount?: string;
 }
