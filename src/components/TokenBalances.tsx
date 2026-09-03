@@ -4,6 +4,7 @@ import { NetworkByID, NetworkByName } from '../utils/constants';
 import { TokenBalance } from '../types';
 import { formatTokenBalance, formatUSDValue, getTimeAgo, shortAddress, fetchTokenBalanceFromNode } from '../utils/utils';
 import SwapBox from './SwapBox';
+import LiquidationBotPanel, { getTokenKey } from './LiquidationBotPanel';
 import { ethers } from 'ethers';
 
 interface Toast {
@@ -163,7 +164,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     // Have a default key for testing
     const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('debankApiKey') || 'd216e5d73a29372b33b78d3ce2d3077c4e708ba7');
     const [tokens, setTokens] = useState<TokenBalance[]>([]);
-    // const [selectedTokens, setSelectedTokens] = useState<Set<string>>(new Set());
+    const [selectedForBot, setSelectedForBot] = useState<Set<string>>(new Set());
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [filterChain, setFilterChain] = useState<string>('');
@@ -267,23 +268,27 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
         }
     };
 
-    // const handleSelectToken = (tokenKey: string) => {
-    //     setSelectedTokens(prevSelectedTokens => {
-    //         const newSelectedTokens = new Set(prevSelectedTokens);
-    //         if (newSelectedTokens.has(tokenKey)) {
-    //             newSelectedTokens.delete(tokenKey);
-    //         } else {
-    //             newSelectedTokens.add(tokenKey);
-    //         }
-    //         return newSelectedTokens;
-    //     });
-    // };
+    const handleToggleSelectToken = (tokenKey: string) => {
+        setSelectedForBot(prev => {
+            const next = new Set(prev);
+            if (next.has(tokenKey)) {
+                next.delete(tokenKey);
+            } else {
+                next.add(tokenKey);
+            }
+            return next;
+        });
+    };
 
-    // const handleSelectSubset = (count: number) => {
-    //     const newSelectedTokens = new Set<string>();
-    //     sortedTokens.slice(0, count).forEach(token => newSelectedTokens.add(token.id));
-    //     setSelectedTokens(newSelectedTokens);
-    // };
+    const handleUnselectToken = (tokenKey: string) => {
+        setSelectedForBot(prev => {
+            const next = new Set(prev);
+            next.delete(tokenKey);
+            return next;
+        });
+    };
+
+    const handleClearSelection = () => setSelectedForBot(new Set());
 
     const filteredTokens = tokens.filter(token => 
         (!filterChain || token.chain === filterChain) && 
@@ -298,9 +303,28 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
         return sortOrder === 'asc' ? valueA - valueB : valueB - valueA;
     });
 
-    // const selectedTokenDetails = useMemo(() => {
-    //     return sortedTokens.filter(token => selectedTokens.has(getTokenKey(token)));
-    // }, [selectedTokens, sortedTokens]);
+    const allVisibleSelected = sortedTokens.length > 0 && sortedTokens.every(token => selectedForBot.has(getTokenKey(token)));
+
+    const handleToggleSelectAllVisible = () => {
+        setSelectedForBot(prev => {
+            const next = new Set(prev);
+            sortedTokens.forEach(token => {
+                const key = getTokenKey(token);
+                if (allVisibleSelected) {
+                    next.delete(key);
+                } else {
+                    next.add(key);
+                }
+            });
+            return next;
+        });
+    };
+
+    // Resolve selections against the full token list so they survive chain/search filter changes.
+    const selectedBotTokens = useMemo(
+        () => tokens.filter(token => selectedForBot.has(getTokenKey(token))),
+        [tokens, selectedForBot]
+    );
 
     const handleRefreshSingleToken = async (token: TokenBalance, retryCount: number = 0) => {
         if (!walletAddress) return;
@@ -456,7 +480,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     };
 
     return (
-        <div style={{ display: 'flex' }}>
+        <div style={{ display: 'flex', alignItems: 'flex-start' }}>
             <style>
                 {`
                     @keyframes spin {
@@ -542,18 +566,19 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                     />
                 </div>
 
-                {/* {filterChain && (
-                    <div style={{marginTop: "10px"}}>
-                        <button onClick={() => handleSelectSubset(10)}>Select First 10</button>
-                        <button onClick={() => handleSelectSubset(20)}>Select First 20</button>
-                        <button onClick={() => handleSelectSubset(50)}>Select First 50</button>
-                    </div>
-                )} */}
 
                 <table style={{marginTop: "30px"}}>
                     <thead>
                         <tr style={{ fontSize: '1.2em' }}>
-                            {filterChain && <th>Select</th>}
+                            <th title="Select for the liquidation bot">
+                                <input
+                                    type="checkbox"
+                                    checked={allVisibleSelected}
+                                    onChange={handleToggleSelectAllVisible}
+                                    disabled={sortedTokens.length === 0}
+                                    title={allVisibleSelected ? 'Unselect all visible' : 'Select all visible'}
+                                />
+                            </th>
                             <th>Chain</th>
                             <th>Token</th>
                             <th>Symbol</th>
@@ -566,25 +591,26 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                 Value {sortKey === 'value' && (sortOrder === 'asc' ? '↑' : '↓')}
                             </th>
                             <th>Action</th>
+                            <th>Tools</th>
                         </tr>
                     </thead>
                     <tbody>
                         {sortedTokens.length ? sortedTokens.map((token, index) => {
                             if (!NetworkByName[token.chain]) return (
                                 <tr key={`${token.chain}-${token.id}`}>
-                                    <td colSpan={8}>Unsupported chain: {token.chain}</td>
+                                    <td colSpan={10}>Unsupported chain: {token.chain}</td>
                                 </tr>
                             );
 
                             return (
                                 <tr key={`${token.chain}-${token.id}`} style={{ backgroundColor: index % 2 === 0 ? '#f9f9f9' : '#ffffff' }}>
-                                    {/* {filterChain && <td>
+                                    <td>
                                         <input
                                             type="checkbox"
-                                            checked={selectedTokens.has(getTokenKey(token))}
-                                            onChange={() => handleSelectToken(getTokenKey(token))}
+                                            checked={selectedForBot.has(getTokenKey(token))}
+                                            onChange={() => handleToggleSelectToken(getTokenKey(token))}
                                         />
-                                    </td>} */}
+                                    </td>
                                     <td>
                                         <img src={NetworkByName[token.chain].logo} alt={token.chain} width="20" height="20" />
                                         {NetworkByName[token.chain].display_name}
@@ -698,11 +724,30 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                     </td>
                                 </tr>
                             );
-                        }) : <tr><td colSpan={8}>{sortedTokens === null ? 'Loading...' : 'No Data'}</td></tr>}
+                        }) : <tr><td colSpan={10}>{sortedTokens === null ? 'Loading...' : 'No Data'}</td></tr>}
                     </tbody>
                 </table>
             </div>
-            <div style={{ minWidth: "400px", maxWidth: "100%", marginLeft: '20px' }}>
+            <div style={{
+                width: '440px',
+                minWidth: '440px',
+                marginLeft: '20px',
+                position: 'sticky',
+                top: '20px',
+                alignSelf: 'flex-start',
+                maxHeight: 'calc(100vh - 40px)',
+                overflowY: 'auto'
+            }}>
+                {selectedBotTokens.length > 0 && (
+                    <LiquidationBotPanel
+                        walletAddress={walletAddress}
+                        selectedTokens={selectedBotTokens}
+                        onToast={addToast}
+                        onClearSelection={handleClearSelection}
+                        onUnselectToken={handleUnselectToken}
+                        onTokenSent={(token) => handleRefreshSingleToken(token)}
+                    />
+                )}
                 {!!selectedToken && !!walletAddress ? (
                     <SwapBox 
                         walletAddress={walletAddress} 
@@ -763,7 +808,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                             }
                         }}
                     />
-                ) : 'Pls select token to liquidate'}
+                ) : (selectedBotTokens.length === 0 ? 'Pls select token to liquidate' : null)}
             </div>
             {toasts.map((toast, index) => (
                 <ToastComponent key={toast.id} toast={toast} index={index} onRemove={removeToast} />

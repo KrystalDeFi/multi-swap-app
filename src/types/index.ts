@@ -42,3 +42,19 @@ export interface RpcEndpoint {
     name: string;
     healthy?: boolean;
 }
+
+export type SendStatus =
+    | 'pending'
+    | 'switching'
+    | 'awaiting-signature'
+    | 'submitted'
+    | 'confirmed'
+    | 'rejected'
+    | 'failed'
+    | 'skipped';
+
+export interface SendResult {
+    status: SendStatus;
+    txHash?: string;
+    message?: string;
+}
