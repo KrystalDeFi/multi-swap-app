@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { NetworkByID, NetworkByName } from '../utils/constants';
 import { TokenBalance } from '../types';
@@ -165,6 +165,8 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
     const [apiKey, setApiKey] = useState<string>(() => localStorage.getItem('debankApiKey') || 'd216e5d73a29372b33b78d3ce2d3077c4e708ba7');
     const [tokens, setTokens] = useState<TokenBalance[]>([]);
     const [selectedForBot, setSelectedForBot] = useState<Set<string>>(new Set());
+    // Index in sortedTokens of the last checkbox toggled, used as the shift-click anchor.
+    const rangeAnchorRef = useRef<number | null>(null);
     const [error, setError] = useState<string | null>(null);
     const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
     const [filterChain, setFilterChain] = useState<string>('');
@@ -268,18 +270,6 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
         }
     };
 
-    const handleToggleSelectToken = (tokenKey: string) => {
-        setSelectedForBot(prev => {
-            const next = new Set(prev);
-            if (next.has(tokenKey)) {
-                next.delete(tokenKey);
-            } else {
-                next.add(tokenKey);
-            }
-            return next;
-        });
-    };
-
     const handleUnselectToken = (tokenKey: string) => {
         setSelectedForBot(prev => {
             const next = new Set(prev);
@@ -318,6 +308,42 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
             });
             return next;
         });
+        rangeAnchorRef.current = null;
+    };
+
+    // Shift-click extends from the last checkbox you touched to the one you just
+    // clicked, applying that checkbox's new state across the whole range.
+    const handleToggleSelectToken = (index: number, event: React.ChangeEvent<HTMLInputElement>) => {
+        const shouldSelect = event.target.checked;
+        const isShiftClick = (event.nativeEvent as MouseEvent).shiftKey === true;
+        const anchor = rangeAnchorRef.current;
+
+        if (isShiftClick) {
+            // Shift-clicking highlights the text between the two rows; drop it.
+            window.getSelection()?.removeAllRanges();
+        }
+
+        const useRange = isShiftClick && anchor !== null && anchor !== index && anchor < sortedTokens.length;
+
+        setSelectedForBot(prev => {
+            const next = new Set(prev);
+            const from = useRange ? Math.min(anchor!, index) : index;
+            const to = useRange ? Math.max(anchor!, index) : index;
+
+            for (let i = from; i <= to; i++) {
+                const token = sortedTokens[i];
+                if (!token) continue;
+                const key = getTokenKey(token);
+                if (shouldSelect) {
+                    next.add(key);
+                } else {
+                    next.delete(key);
+                }
+            }
+            return next;
+        });
+
+        rangeAnchorRef.current = index;
     };
 
     // Resolve selections against the full token list so they survive chain/search filter changes.
@@ -325,6 +351,10 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
         () => tokens.filter(token => selectedForBot.has(getTokenKey(token))),
         [tokens, selectedForBot]
     );
+
+    useEffect(() => {
+        rangeAnchorRef.current = null;
+    }, [filterChain, searchTerm, sortKey, sortOrder, threshold, showUnverified, filterSmallValues]);
 
     const handleRefreshSingleToken = async (token: TokenBalance, retryCount: number = 0) => {
         if (!walletAddress) return;
@@ -570,7 +600,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                 <table style={{marginTop: "30px"}}>
                     <thead>
                         <tr style={{ fontSize: '1.2em' }}>
-                            <th title="Select for the liquidation bot">
+                            <th title="Select for the liquidation bot — shift-click to select a range">
                                 <input
                                     type="checkbox"
                                     checked={allVisibleSelected}
@@ -608,7 +638,7 @@ const TokenBalances: React.FC<TokenListProps> = ({ walletAddress }) => {
                                         <input
                                             type="checkbox"
                                             checked={selectedForBot.has(getTokenKey(token))}
-                                            onChange={() => handleToggleSelectToken(getTokenKey(token))}
+                                            onChange={(e) => handleToggleSelectToken(index, e)}
                                         />
                                     </td>
                                     <td>
